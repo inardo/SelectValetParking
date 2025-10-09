@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3a8a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Valet Parking">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="./select-valet.png">
     <title>Valet Parking Management</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -751,7 +757,7 @@
                         <div className="header-container">
                             <div className="logo-container">
                                 <img src="./select-valet.png" alt="Select Valet Logo" className="brand-logo" />
-                                <h1 className="header-title">Parking Management</h1>
+                                <h1 className="header-title">Valet Parking Management</h1>
                             </div>
                         </div>
                         
@@ -1035,6 +1041,15 @@
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<ValetParkingApp />);
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed'));
+            });
+        }
     </script>
 </body>
 </html>
