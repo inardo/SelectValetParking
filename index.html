@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Select Valet Parking Management</title>
+    <title>Valet Parking Management</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -132,9 +132,10 @@
             const [editingOverflow, setEditingOverflow] = useState(null);
             const [searchResult, setSearchResult] = useState(null);
             const [showClearAllConfirm, setShowClearAllConfirm] = useState(null);
+            const [draggedItem, setDraggedItem] = useState(null);
 
-            const lotXOverflowSpots = ['OF1', 'OF2', 'OF3', 'OF4', 'OF5', 'OF6', 'OF7', 'OF8'];
-            const lotYOverflowSpots = ['OF1', 'OF2', 'OF3', 'OF4', 'OF5', 'OF6', 'OF7', 'OF8', 'OF9'];
+            const lotXOverflowSpots = ['OF1', 'OF2', 'OF3', 'OF4', 'OF5', 'OF6', 'OF7', 'OF8', 'OF9'];
+            const lotYOverflowSpots = ['OF1', 'OF2', 'OF3', 'OF4', 'OF5', 'OF6', 'OF7', 'OF8', 'OF9', 'OF10'];
             const lotDStalls = useMemo(() => {
                 const stalls = [];
                 for (let i = 1; i <= 12; i++) stalls.push(`D${i}`);
@@ -750,7 +751,7 @@
                             <div className="logo-container">
                                 {/* Replace YOUR_LOGO_URL_HERE with your actual logo URL */}
                                 <img src="YOUR_LOGO_URL_HERE" alt="Company Logo" className="brand-logo" />
-                                <h1 className="header-title">Select Valet Parking Management</h1>
+                                <h1 className="header-title">Valet Parking Management</h1>
                             </div>
                         </div>
                         
@@ -861,28 +862,32 @@
                                         Clear All
                                     </button>
                                 </div>
-                                <div className="grid grid-cols-5 gap-3 mb-4">
+                                <div className="grid grid-cols-6 gap-3 mb-4">
                                     {['X1', 'X2', 'X3', 'X4'].map(stall => (
                                         <Stall key={stall} id={stall} lot="X" data={lotX[stall]} size="large" />
                                     ))}
+                                    <OverflowSpot id="OF5" lot="X" />
                                     <div className="flex items-center justify-center text-sm text-gray-600 font-semibold">RAMP →</div>
                                 </div>
-                                <div className="grid grid-cols-5 gap-3 mb-4">
+                                <div className="grid grid-cols-6 gap-3 mb-4">
                                     {['OF1', 'OF2', 'OF3', 'OF4'].map(of => (
                                         <OverflowSpot key={of} id={of} lot="X" />
                                     ))}
                                     <div></div>
+                                    <div></div>
                                 </div>
-                                <div className="grid grid-cols-5 gap-3">
-                                    {['OF5', 'OF6', 'OF7', 'OF8'].map(of => (
+                                <div className="grid grid-cols-6 gap-3">
+                                    {['OF6', 'OF7', 'OF8', 'OF9'].map(of => (
                                         <OverflowSpot key={of} id={of} lot="X" />
                                     ))}
                                     <div></div>
+                                    <div></div>
                                 </div>
-                                <div className="grid grid-cols-5 gap-3 mt-4">
+                                <div className="grid grid-cols-6 gap-3 mt-4">
                                     <div></div>
                                     <Stall id="X5" lot="X" data={lotX['X5']} size="large" />
                                     <Stall id="X6" lot="X" data={lotX['X6']} size="large" />
+                                    <div></div>
                                     <div></div>
                                     <div></div>
                                 </div>
@@ -913,11 +918,12 @@
                                     ))}
                                     <div></div>
                                 </div>
-                                <div className="grid grid-cols-6 gap-3 mb-4">
+                                <div className="grid grid-cols-7 gap-3 mb-4">
                                     {['OF5', 'OF6', 'OF7', 'OF8'].map(of => (
                                         <OverflowSpot key={of} id={of} lot="Y" />
                                     ))}
                                     <OverflowSpot id="OF9" lot="Y" />
+                                    <OverflowSpot id="OF10" lot="Y" />
                                     <div className="flex items-center justify-center text-sm text-gray-600 font-semibold">RAMP →</div>
                                 </div>
                                 <div className="grid grid-cols-6 gap-3">
