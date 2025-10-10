@@ -156,20 +156,40 @@
 
             const getBlockingInfo = (lot, stallId) => {
                 if (lot === 'D') {
-                    // Extract the base number from stall ID
-                    if (stallId === 'D' || stallId === 'DD' || stallId === 'DT') return null;
+                    // Special handling for D, DD, DT column stalls
+                    if (stallId === 'D') {
+                        // D is blocked by DD or DT
+                        const ddTicket = lotD['DD'];
+                        const dtTicket = lotD['DT'];
+                        if (ddTicket || dtTicket) {
+                            const blockingStalls = [];
+                            if (ddTicket) blockingStalls.push({ stall: 'DD', ticket: ddTicket });
+                            if (dtTicket) blockingStalls.push({ stall: 'DT', ticket: dtTicket });
+                            return { multiple: true, blocking: blockingStalls };
+                        }
+                        return null;
+                    }
+                    if (stallId === 'DD') {
+                        // DD is blocked by DT
+                        const dtTicket = lotD['DT'];
+                        if (dtTicket) {
+                            return { stall: 'DT', ticket: dtTicket };
+                        }
+                        return null;
+                    }
+                    if (stallId === 'DT') {
+                        // DT is never blocked (front row)
+                        return null;
+                    }
                     
-                    // Determine which row this stall is in
-                    let baseNumber;
-                    let currentRow; // 1 = back (D1-D12), 2 = middle (D1D-D12D), 3 = front (D1T-D12T)
+                    // Regular numbered stalls
+                    const baseNumber = stallId.replace(/[DT]/g, '');
                     
                     if (stallId.endsWith('T')) {
-                        // Front row (D1T-D12T) - never blocked
+                        // Front row - never blocked
                         return null;
                     } else if (stallId.endsWith('D')) {
-                        // Middle row (D1D-D12D) - blocked by front row
-                        baseNumber = stallId.replace('D', '').replace('D', ''); // Remove both D's to get number
-                        currentRow = 2;
+                        // Middle row - blocked by front row
                         const frontStall = `D${baseNumber}T`;
                         const frontTicket = lotD[frontStall];
                         if (frontTicket) {
@@ -177,9 +197,7 @@
                         }
                         return null;
                     } else {
-                        // Back row (D1-D12) - blocked by middle and/or front row
-                        baseNumber = stallId.replace('D', ''); // Remove D to get number
-                        currentRow = 1;
+                        // Back row - blocked by middle and/or front row
                         const middleStall = `D${baseNumber}D`;
                         const frontStall = `D${baseNumber}T`;
                         const middleTicket = lotD[middleStall];
