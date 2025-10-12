@@ -25,6 +25,7 @@ function ValetParkingApp() {
     const [editingOverflow, setEditingOverflow] = useState(null);
     const [searchResult, setSearchResult] = useState(null);
     const [showClearAllConfirm, setShowClearAllConfirm] = useState(null);
+    const [draggedItem, setDraggedItem] = useState(null);
 
     const handleSearch = () => {
         if (!searchTerm) {
@@ -101,12 +102,218 @@ function ValetParkingApp() {
         setShowClearAllConfirm(null);
     };
 
+    const handleDragStart = (e, sourceType, sourceLot, sourceId, data) => {
+        if (!data) return; // Don't allow dragging empty stalls
+        setDraggedItem({ type: sourceType, lot: sourceLot, id: sourceId, data });
+        e.dataTransfer.effectAllowed = 'move';
+    };
+
+    const handleDragOver = (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = (e, targetType, targetLot, targetId) => {
+        e.preventDefault();
+        if (!draggedItem) return;
+
+        const sourceType = draggedItem.type;
+        const sourceLot = draggedItem.lot;
+        const sourceId = draggedItem.id;
+        const sourceData = draggedItem.data;
+
+        // Can't drop on same location
+        if (sourceType === targetType && sourceLot === targetLot && sourceId === targetId) {
+            setDraggedItem(null);
+            return;
+        }
+
+        // Get target data
+        let targetData = null;
+        if (targetType === 'stall') {
+            targetData = targetLot === 'D' ? lotD[targetId] : targetLot === 'X' ? lotX[targetId] : lotY[targetId];
+        } else if (targetType === 'overflow') {
+            const targetOverflow = targetLot === 'X' ? overflowX : overflowY;
+            targetData = targetOverflow[targetId];
+        }
+
+        // Check for blocking - can't drop on blocked stall
+        if (targetType === 'stall') {
+            const blockInfo = window.getBlockingInfo(targetLot, targetId, lotD, lotX, lotY, overflowX, overflowY);
+            if (blockInfo && targetLot !== 'D') {
+                alert('Cannot move to a blocked stall!');
+                setDraggedItem(null);
+                return;
+            }
+        }
+
+        // Perform the move/swap
+        if (sourceType === 'stall' && targetType === 'stall') {
+            // Stall to Stall
+            if (sourceLot === 'D') {
+                const newLotD = { ...lotD };
+                if (targetData) {
+                    newLotD[sourceId] = targetData; // Swap
+                } else {
+                    delete newLotD[sourceId]; // Move
+                }
+                if (targetLot === 'D') {
+                    newLotD[targetId] = sourceData;
+                    setLotD(newLotD);
+                } else if (targetLot === 'X') {
+                    const newLotX = { ...lotX };
+                    newLotX[targetId] = sourceData;
+                    setLotD(newLotD);
+                    setLotX(newLotX);
+                } else {
+                    const newLotY = { ...lotY };
+                    newLotY[targetId] = sourceData;
+                    setLotD(newLotD);
+                    setLotY(newLotY);
+                }
+            } else if (sourceLot === 'X') {
+                const newLotX = { ...lotX };
+                if (targetData) {
+                    newLotX[sourceId] = targetData;
+                } else {
+                    delete newLotX[sourceId];
+                }
+                if (targetLot === 'X') {
+                    newLotX[targetId] = sourceData;
+                    setLotX(newLotX);
+                } else if (targetLot === 'D') {
+                    const newLotD = { ...lotD };
+                    newLotD[targetId] = sourceData;
+                    setLotX(newLotX);
+                    setLotD(newLotD);
+                } else {
+                    const newLotY = { ...lotY };
+                    newLotY[targetId] = sourceData;
+                    setLotX(newLotX);
+                    setLotY(newLotY);
+                }
+            } else {
+                const newLotY = { ...lotY };
+                if (targetData) {
+                    newLotY[sourceId] = targetData;
+                } else {
+                    delete newLotY[sourceId];
+                }
+                if (targetLot === 'Y') {
+                    newLotY[targetId] = sourceData;
+                    setLotY(newLotY);
+                } else if (targetLot === 'D') {
+                    const newLotD = { ...lotD };
+                    newLotD[targetId] = sourceData;
+                    setLotY(newLotY);
+                    setLotD(newLotD);
+                } else {
+                    const newLotX = { ...lotX };
+                    newLotX[targetId] = sourceData;
+                    setLotY(newLotY);
+                    setLotX(newLotX);
+                }
+            }
+        } else if (sourceType === 'stall' && targetType === 'overflow') {
+            // Stall to Overflow - keep blocks from target if swapping
+            if (sourceLot === 'D') {
+                const newLotD = { ...lotD };
+                delete newLotD[sourceId];
+                setLotD(newLotD);
+            } else if (sourceLot === 'X') {
+                const newLotX = { ...lotX };
+                delete newLotX[sourceId];
+                setLotX(newLotX);
+            } else {
+                const newLotY = { ...lotY };
+                delete newLotY[sourceId];
+                setLotY(newLotY);
+            }
+            
+            if (targetLot === 'X') {
+                const newOverflowX = { ...overflowX };
+                newOverflowX[targetId] = {
+                    ticket: window.getTicketValue(sourceData),
+                    notes: window.getNotesValue(sourceData),
+                    blocks: targetData?.blocks || []
+                };
+                setOverflowX(newOverflowX);
+            } else {
+                const newOverflowY = { ...overflowY };
+                newOverflowY[targetId] = {
+                    ticket: window.getTicketValue(sourceData),
+                    notes: window.getNotesValue(sourceData),
+                    blocks: targetData?.blocks || []
+                };
+                setOverflowY(newOverflowY);
+            }
+        } else if (sourceType === 'overflow' && targetType === 'stall') {
+            // Overflow to Stall
+            if (sourceLot === 'X') {
+                const newOverflowX = { ...overflowX };
+                delete newOverflowX[sourceId];
+                setOverflowX(newOverflowX);
+            } else {
+                const newOverflowY = { ...overflowY };
+                delete newOverflowY[sourceId];
+                setOverflowY(newOverflowY);
+            }
+            
+            const newStallData = {
+                ticket: sourceData.ticket,
+                notes: sourceData.notes || ''
+            };
+            
+            if (targetLot === 'D') {
+                const newLotD = { ...lotD };
+                newLotD[targetId] = newStallData;
+                setLotD(newLotD);
+            } else if (targetLot === 'X') {
+                const newLotX = { ...lotX };
+                newLotX[targetId] = newStallData;
+                setLotX(newLotX);
+            } else {
+                const newLotY = { ...lotY };
+                newLotY[targetId] = newStallData;
+                setLotY(newLotY);
+            }
+        } else if (sourceType === 'overflow' && targetType === 'overflow') {
+            // Overflow to Overflow
+            if (sourceLot === targetLot) {
+                if (sourceLot === 'X') {
+                    const newOverflowX = { ...overflowX };
+                    if (targetData) {
+                        newOverflowX[sourceId] = targetData;
+                        newOverflowX[targetId] = sourceData;
+                    } else {
+                        delete newOverflowX[sourceId];
+                        newOverflowX[targetId] = sourceData;
+                    }
+                    setOverflowX(newOverflowX);
+                } else {
+                    const newOverflowY = { ...overflowY };
+                    if (targetData) {
+                        newOverflowY[sourceId] = targetData;
+                        newOverflowY[targetId] = sourceData;
+                    } else {
+                        delete newOverflowY[sourceId];
+                        newOverflowY[targetId] = sourceData;
+                    }
+                    setOverflowY(newOverflowY);
+                }
+            }
+        }
+
+        setDraggedItem(null);
+    };
+
     const Stall = ({ id, lot, data }) => {
         const ticketValue = window.getTicketValue(data);
         const notesValue = window.getNotesValue(data);
         const isOccupied = !!ticketValue;
         const blockingInfo = window.getBlockingInfo(lot, id, lotD, lotX, lotY, overflowX, overflowY);
         const isHighlighted = searchResult && searchResult.lot === lot && searchResult.stall === id && !searchResult.overflow;
+        const isDragOver = draggedItem && draggedItem.id !== id;
 
         let bgColor, borderColor, ringColor;
         
@@ -128,10 +335,19 @@ function ValetParkingApp() {
             ringColor = 'hover:bg-gray-50';
         }
 
+        if (isDragOver) {
+            borderColor = 'border-blue-500';
+            ringColor = 'ring-2 ring-blue-300';
+        }
+
         return (
             <button
+                draggable={isOccupied}
+                onDragStart={(e) => handleDragStart(e, 'stall', lot, id, data)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, 'stall', lot, id)}
                 onClick={() => setEditingStall({ stall: id, lot })}
-                className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor}`}
+                className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor} ${isOccupied ? 'cursor-move' : 'cursor-pointer'}`}
             >
                 <div className="font-bold text-sm">{id}</div>
                 {ticketValue && <div className="text-[10px] mt-1 truncate">{ticketValue}</div>}
@@ -159,15 +375,25 @@ function ValetParkingApp() {
         const data = overflowData[id];
         const isOccupied = !!data;
         const isHighlighted = searchResult && searchResult.overflow === id && searchResult.lot === lot;
+        const isDragOver = draggedItem && draggedItem.id !== id;
+
+        let borderColor = isHighlighted ? 'border-yellow-400' : isOccupied ? 'border-orange-500' : 'border-gray-400';
+        let bgColor = isHighlighted ? 'bg-yellow-100' : isOccupied ? 'bg-orange-100' : 'bg-gray-50';
+        let ringColor = isHighlighted ? 'ring-4 ring-yellow-300' : '';
+        
+        if (isDragOver) {
+            borderColor = 'border-blue-500';
+            ringColor = 'ring-2 ring-blue-300';
+        }
 
         return (
             <button
+                draggable={isOccupied}
+                onDragStart={(e) => handleDragStart(e, 'overflow', lot, id, data)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, 'overflow', lot, id)}
                 onClick={() => setEditingOverflow({ lot, ofId: id })}
-                className={`min-h-16 p-2 rounded text-xs font-medium border-2 transition-all ${
-                    isHighlighted ? 'border-yellow-400 bg-yellow-100 ring-4 ring-yellow-300' :
-                    isOccupied ? 'bg-orange-100 border-orange-500' : 
-                    'bg-gray-50 border-gray-400 hover:bg-gray-100'
-                }`}
+                className={`min-h-16 p-2 rounded text-xs font-medium border-2 transition-all ${bgColor} ${borderColor} ${ringColor} ${isOccupied ? 'cursor-move' : 'cursor-pointer'}`}
             >
                 <div className="font-bold">{id}</div>
                 {data && (
