@@ -104,17 +104,21 @@ function ValetParkingApp() {
 
     const handleDragStart = (e, sourceType, sourceLot, sourceId, data) => {
         if (!data) return; // Don't allow dragging empty stalls
+        e.stopPropagation();
         setDraggedItem({ type: sourceType, lot: sourceLot, id: sourceId, data });
         e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', sourceId); // Required for Firefox
     };
 
     const handleDragOver = (e) => {
         e.preventDefault();
+        e.stopPropagation();
         e.dataTransfer.dropEffect = 'move';
     };
 
     const handleDrop = (e, targetType, targetLot, targetId) => {
         e.preventDefault();
+        e.stopPropagation();
         if (!draggedItem) return;
 
         const sourceType = draggedItem.type;
@@ -343,10 +347,15 @@ function ValetParkingApp() {
         return (
             <button
                 draggable={isOccupied}
-                onDragStart={(e) => handleDragStart(e, 'stall', lot, id, data)}
+                onDragStart={(e) => isOccupied && handleDragStart(e, 'stall', lot, id, data)}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, 'stall', lot, id)}
-                onClick={() => setEditingStall({ stall: id, lot })}
+                onDragEnd={() => setDraggedItem(null)}
+                onClick={(e) => {
+                    if (!e.defaultPrevented) {
+                        setEditingStall({ stall: id, lot });
+                    }
+                }}
                 className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor} ${isOccupied ? 'cursor-move' : 'cursor-pointer'}`}
             >
                 <div className="font-bold text-sm">{id}</div>
@@ -389,10 +398,15 @@ function ValetParkingApp() {
         return (
             <button
                 draggable={isOccupied}
-                onDragStart={(e) => handleDragStart(e, 'overflow', lot, id, data)}
+                onDragStart={(e) => isOccupied && handleDragStart(e, 'overflow', lot, id, data)}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, 'overflow', lot, id)}
-                onClick={() => setEditingOverflow({ lot, ofId: id })}
+                onDragEnd={() => setDraggedItem(null)}
+                onClick={(e) => {
+                    if (!e.defaultPrevented) {
+                        setEditingOverflow({ lot, ofId: id });
+                    }
+                }}
                 className={`min-h-16 p-2 rounded text-xs font-medium border-2 transition-all ${bgColor} ${borderColor} ${ringColor} ${isOccupied ? 'cursor-move' : 'cursor-pointer'}`}
             >
                 <div className="font-bold">{id}</div>
