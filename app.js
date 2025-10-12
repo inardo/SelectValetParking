@@ -26,6 +26,7 @@ function ValetParkingApp() {
     const [searchResult, setSearchResult] = useState(null);
     const [showClearAllConfirm, setShowClearAllConfirm] = useState(null);
     const [draggedItem, setDraggedItem] = useState(null);
+    const [isDragging, setIsDragging] = useState(false);
 
     const handleSearch = () => {
         if (!searchTerm) {
@@ -106,6 +107,7 @@ function ValetParkingApp() {
         if (!data) return; // Don't allow dragging empty stalls
         console.log('Drag started:', { sourceType, sourceLot, sourceId, data });
         e.stopPropagation();
+        setIsDragging(true);
         setDraggedItem({ type: sourceType, lot: sourceLot, id: sourceId, data });
         e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', sourceId); // Required for Firefox
@@ -121,6 +123,7 @@ function ValetParkingApp() {
         console.log('Drop triggered:', { targetType, targetLot, targetId, draggedItem });
         e.preventDefault();
         e.stopPropagation();
+        
         if (!draggedItem) {
             console.log('No dragged item!');
             return;
@@ -314,6 +317,8 @@ function ValetParkingApp() {
         }
 
         setDraggedItem(null);
+        setIsDragging(false);
+        console.log('Drop completed successfully');
     };
 
     const Stall = ({ id, lot, data }) => {
@@ -355,9 +360,12 @@ function ValetParkingApp() {
                 onDragStart={(e) => isOccupied && handleDragStart(e, 'stall', lot, id, data)}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, 'stall', lot, id)}
-                onDragEnd={() => setDraggedItem(null)}
+                onDragEnd={() => {
+                    setDraggedItem(null);
+                    setIsDragging(false);
+                }}
                 onClick={(e) => {
-                    if (!e.defaultPrevented) {
+                    if (!isDragging) {
                         setEditingStall({ stall: id, lot });
                     }
                 }}
@@ -407,9 +415,12 @@ function ValetParkingApp() {
                 onDragStart={(e) => isOccupied && handleDragStart(e, 'overflow', lot, id, data)}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, 'overflow', lot, id)}
-                onDragEnd={() => setDraggedItem(null)}
+                onDragEnd={() => {
+                    setDraggedItem(null);
+                    setIsDragging(false);
+                }}
                 onClick={(e) => {
-                    if (!e.defaultPrevented) {
+                    if (!isDragging) {
                         setEditingOverflow({ lot, ofId: id });
                     }
                 }}
