@@ -345,7 +345,7 @@ function ValetParkingApp() {
         }
 
         return (
-            <button
+            <div
                 draggable={isOccupied}
                 onDragStart={(e) => isOccupied && handleDragStart(e, 'stall', lot, id, data)}
                 onDragOver={handleDragOver}
@@ -375,7 +375,7 @@ function ValetParkingApp() {
                         Blocked by {blockingInfo.ofId}
                     </div>
                 )}
-            </button>
+            </div>
         );
     };
 
@@ -396,7 +396,7 @@ function ValetParkingApp() {
         }
 
         return (
-            <button
+            <div
                 draggable={isOccupied}
                 onDragStart={(e) => isOccupied && handleDragStart(e, 'overflow', lot, id, data)}
                 onDragOver={handleDragOver}
@@ -422,7 +422,7 @@ function ValetParkingApp() {
                     </div>
                 )}
                 {!data && <div className="text-[9px] text-gray-500 mt-1">Empty</div>}
-            </button>
+            </div>
         );
     };
 
