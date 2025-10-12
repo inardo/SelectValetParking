@@ -104,6 +104,7 @@ function ValetParkingApp() {
 
     const handleDragStart = (e, sourceType, sourceLot, sourceId, data) => {
         if (!data) return; // Don't allow dragging empty stalls
+        console.log('Drag started:', { sourceType, sourceLot, sourceId, data });
         e.stopPropagation();
         setDraggedItem({ type: sourceType, lot: sourceLot, id: sourceId, data });
         e.dataTransfer.effectAllowed = 'move';
@@ -117,9 +118,13 @@ function ValetParkingApp() {
     };
 
     const handleDrop = (e, targetType, targetLot, targetId) => {
+        console.log('Drop triggered:', { targetType, targetLot, targetId, draggedItem });
         e.preventDefault();
         e.stopPropagation();
-        if (!draggedItem) return;
+        if (!draggedItem) {
+            console.log('No dragged item!');
+            return;
+        }
 
         const sourceType = draggedItem.type;
         const sourceLot = draggedItem.lot;
