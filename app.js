@@ -356,6 +356,7 @@ function ValetParkingApp() {
                         setEditingStall({ stall: id, lot });
                     }
                 }}
+                style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor} ${isOccupied ? 'cursor-move' : 'cursor-pointer'}`}
             >
                 <div className="font-bold text-sm">{id}</div>
@@ -407,6 +408,7 @@ function ValetParkingApp() {
                         setEditingOverflow({ lot, ofId: id });
                     }
                 }}
+                style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
                 className={`min-h-16 p-2 rounded text-xs font-medium border-2 transition-all ${bgColor} ${borderColor} ${ringColor} ${isOccupied ? 'cursor-move' : 'cursor-pointer'}`}
             >
                 <div className="font-bold">{id}</div>
