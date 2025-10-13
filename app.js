@@ -80,6 +80,7 @@
                 )}
                 
                 <div className="bg-white rounded-lg shadow p-4 mb-4">
+                    <div className="flex gap-2">
                 const { useState, useEffect } = React;
 
 function ValetParkingApp() {
