@@ -104,13 +104,12 @@ function ValetParkingApp() {
     };
 
     const handleDragStart = (e, sourceType, sourceLot, sourceId, data) => {
-        if (!data) return; // Don't allow dragging empty stalls
-        console.log('Drag started:', { sourceType, sourceLot, sourceId, data });
+        if (!data) return;
         e.stopPropagation();
         setIsDragging(true);
         setDraggedItem({ type: sourceType, lot: sourceLot, id: sourceId, data });
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', sourceId); // Required for Firefox
+        e.dataTransfer.setData('text/plain', sourceId);
     };
 
     const handleDragOver = (e) => {
@@ -120,27 +119,21 @@ function ValetParkingApp() {
     };
 
     const handleDrop = (e, targetType, targetLot, targetId) => {
-        console.log('Drop triggered:', { targetType, targetLot, targetId, draggedItem });
         e.preventDefault();
         e.stopPropagation();
         
-        if (!draggedItem) {
-            console.log('No dragged item!');
-            return;
-        }
+        if (!draggedItem) return;
 
         const sourceType = draggedItem.type;
         const sourceLot = draggedItem.lot;
         const sourceId = draggedItem.id;
         const sourceData = draggedItem.data;
 
-        // Can't drop on same location
         if (sourceType === targetType && sourceLot === targetLot && sourceId === targetId) {
             setDraggedItem(null);
             return;
         }
 
-        // Get target data
         let targetData = null;
         if (targetType === 'stall') {
             targetData = targetLot === 'D' ? lotD[targetId] : targetLot === 'X' ? lotX[targetId] : lotY[targetId];
@@ -149,7 +142,6 @@ function ValetParkingApp() {
             targetData = targetOverflow[targetId];
         }
 
-        // Check for blocking - can't drop on blocked stall
         if (targetType === 'stall') {
             const blockInfo = window.getBlockingInfo(targetLot, targetId, lotD, lotX, lotY, overflowX, overflowY);
             if (blockInfo && targetLot !== 'D') {
@@ -159,15 +151,13 @@ function ValetParkingApp() {
             }
         }
 
-        // Perform the move/swap
         if (sourceType === 'stall' && targetType === 'stall') {
-            // Stall to Stall
             if (sourceLot === 'D') {
                 const newLotD = { ...lotD };
                 if (targetData) {
-                    newLotD[sourceId] = targetData; // Swap
+                    newLotD[sourceId] = targetData;
                 } else {
-                    delete newLotD[sourceId]; // Move
+                    delete newLotD[sourceId];
                 }
                 if (targetLot === 'D') {
                     newLotD[targetId] = sourceData;
@@ -227,7 +217,6 @@ function ValetParkingApp() {
                 }
             }
         } else if (sourceType === 'stall' && targetType === 'overflow') {
-            // Stall to Overflow - keep blocks from target if swapping
             if (sourceLot === 'D') {
                 const newLotD = { ...lotD };
                 delete newLotD[sourceId];
@@ -247,7 +236,8 @@ function ValetParkingApp() {
                 newOverflowX[targetId] = {
                     ticket: window.getTicketValue(sourceData),
                     notes: window.getNotesValue(sourceData),
-                    blocks: targetData?.blocks || []
+                    blocks: targetData?.blocks || [],
+                    isTransient: sourceData?.isTransient || false
                 };
                 setOverflowX(newOverflowX);
             } else {
@@ -255,12 +245,12 @@ function ValetParkingApp() {
                 newOverflowY[targetId] = {
                     ticket: window.getTicketValue(sourceData),
                     notes: window.getNotesValue(sourceData),
-                    blocks: targetData?.blocks || []
+                    blocks: targetData?.blocks || [],
+                    isTransient: sourceData?.isTransient || false
                 };
                 setOverflowY(newOverflowY);
             }
         } else if (sourceType === 'overflow' && targetType === 'stall') {
-            // Overflow to Stall
             if (sourceLot === 'X') {
                 const newOverflowX = { ...overflowX };
                 delete newOverflowX[sourceId];
@@ -273,7 +263,8 @@ function ValetParkingApp() {
             
             const newStallData = {
                 ticket: sourceData.ticket,
-                notes: sourceData.notes || ''
+                notes: sourceData.notes || '',
+                isTransient: sourceData.isTransient || false
             };
             
             if (targetLot === 'D') {
@@ -290,7 +281,6 @@ function ValetParkingApp() {
                 setLotY(newLotY);
             }
         } else if (sourceType === 'overflow' && targetType === 'overflow') {
-            // Overflow to Overflow
             if (sourceLot === targetLot) {
                 if (sourceLot === 'X') {
                     const newOverflowX = { ...overflowX };
@@ -318,13 +308,13 @@ function ValetParkingApp() {
 
         setDraggedItem(null);
         setIsDragging(false);
-        console.log('Drop completed successfully');
     };
 
     const Stall = ({ id, lot, data }) => {
         const ticketValue = window.getTicketValue(data);
         const notesValue = window.getNotesValue(data);
-        const isOccupied = !!ticketValue;
+        const isTransient = data?.isTransient || false;
+        const isOccupied = !!ticketValue || isTransient;
         const blockingInfo = window.getBlockingInfo(lot, id, lotD, lotX, lotY, overflowX, overflowY);
         const isHighlighted = searchResult && searchResult.lot === lot && searchResult.stall === id && !searchResult.overflow;
         const isDragOver = draggedItem && draggedItem.id !== id;
@@ -340,8 +330,8 @@ function ValetParkingApp() {
             borderColor = 'border-yellow-400';
             ringColor = 'ring-4 ring-yellow-300';
         } else if (isOccupied) {
-            bgColor = 'bg-green-100';
-            borderColor = 'border-green-600';
+            bgColor = isTransient ? 'bg-purple-100' : 'bg-green-100';
+            borderColor = isTransient ? 'border-purple-600' : 'border-green-600';
             ringColor = '';
         } else {
             bgColor = 'bg-white';
@@ -373,7 +363,9 @@ function ValetParkingApp() {
                 className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor} ${isOccupied ? 'cursor-move' : 'cursor-pointer'}`}
             >
                 <div className="font-bold text-sm">{id}</div>
+                {isTransient && !ticketValue && <div className="text-[10px] mt-1 italic text-purple-700">Transient</div>}
                 {ticketValue && <div className="text-[10px] mt-1 truncate">{ticketValue}</div>}
+                {isTransient && ticketValue && <div className="text-[9px] mt-0.5 italic text-purple-700">Transient</div>}
                 {notesValue && <div className="text-[9px] text-gray-600 mt-0.5 italic truncate">{notesValue}</div>}
                 {blockingInfo && lot === 'D' && (
                     <div className="text-[9px] text-red-700 mt-1 font-semibold">
@@ -396,12 +388,13 @@ function ValetParkingApp() {
     const OverflowSpot = ({ id, lot }) => {
         const overflowData = lot === 'X' ? overflowX : overflowY;
         const data = overflowData[id];
+        const isTransient = data?.isTransient || false;
         const isOccupied = !!data;
         const isHighlighted = searchResult && searchResult.overflow === id && searchResult.lot === lot;
         const isDragOver = draggedItem && draggedItem.id !== id;
 
-        let borderColor = isHighlighted ? 'border-yellow-400' : isOccupied ? 'border-orange-500' : 'border-gray-400';
-        let bgColor = isHighlighted ? 'bg-yellow-100' : isOccupied ? 'bg-orange-100' : 'bg-gray-50';
+        let borderColor = isHighlighted ? 'border-yellow-400' : isOccupied ? (isTransient ? 'border-purple-500' : 'border-orange-500') : 'border-gray-400';
+        let bgColor = isHighlighted ? 'bg-yellow-100' : isOccupied ? (isTransient ? 'bg-purple-100' : 'bg-orange-100') : 'bg-gray-50';
         let ringColor = isHighlighted ? 'ring-4 ring-yellow-300' : '';
         
         if (isDragOver) {
@@ -430,7 +423,9 @@ function ValetParkingApp() {
                 <div className="font-bold">{id}</div>
                 {data && (
                     <div className="mt-1">
-                        <div className="text-[10px] truncate">{data.ticket}</div>
+                        {isTransient && !data.ticket && <div className="text-[10px] italic text-purple-700">Transient</div>}
+                        {data.ticket && <div className="text-[10px] truncate">{data.ticket}</div>}
+                        {isTransient && data.ticket && <div className="text-[9px] italic text-purple-700">Transient</div>}
                         {data.notes && <div className="text-[9px] text-gray-600 mt-0.5 italic truncate">{data.notes}</div>}
                         {data.blocks && data.blocks.length > 0 && (
                             <div className="text-[9px] text-orange-700 mt-1">
@@ -449,7 +444,6 @@ function ValetParkingApp() {
             <div className="max-w-7xl mx-auto">
                 <div className="header-container">
                     <div className="logo-container">
-                        <img src="./select-valet.png" alt="Select Valet Logo" className="brand-logo" />
                         <h1 className="header-title">Valet Parking Management</h1>
                     </div>
                 </div>
@@ -464,6 +458,7 @@ function ValetParkingApp() {
                             placeholder="Enter 6-digit ticket number"
                             maxLength="6"
                             inputMode="numeric"
+                            pattern="[0-9]*"
                             className="flex-1 px-4 py-2 border rounded"
                         />
                         <button
@@ -706,6 +701,10 @@ function ValetParkingApp() {
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-orange-100 border-2 border-orange-500 rounded"></div>
                             <span>Occupied Overflow</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-purple-100 border-2 border-purple-600 rounded"></div>
+                            <span>Transient Vehicle</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 bg-yellow-100 border-2 border-yellow-400 rounded"></div>

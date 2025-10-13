@@ -55,6 +55,7 @@ window.StallEditor = ({ stall, lot, onClose, lotD, lotX, lotY, setLotD, setLotX,
     
     const [ticket, setTicket] = useState(ticketValue);
     const [notes, setNotes] = useState(notesValue);
+    const [isTransient, setIsTransient] = useState(currentData?.isTransient || false);
     const [error, setError] = useState('');
     const blockingInfo = window.getBlockingInfo(lot, stall, lotD, lotX, lotY, overflowX, overflowY);
 
@@ -65,20 +66,30 @@ window.StallEditor = ({ stall, lot, onClose, lotD, lotX, lotY, setLotD, setLotX,
     };
 
     const handleSave = () => {
-        if (ticket && ticket.length !== 6) {
-            setError('Ticket number must be exactly 6 digits');
-            return;
-        }
-        const duplicate = window.checkDuplicateTicket(ticket, lot, stall, false, lotD, lotX, lotY, overflowX, overflowY);
-        if (duplicate) {
-            if (duplicate.overflow) {
-                setError(`Ticket already exists in Lot ${duplicate.lot} - ${duplicate.overflow}`);
-            } else {
-                setError(`Ticket already exists in Lot ${duplicate.lot} - Stall ${duplicate.stall}`);
+        if (!isTransient) {
+            if (ticket && ticket.length !== 6) {
+                setError('Ticket number must be exactly 6 digits');
+                return;
             }
-            return;
+            if (!ticket) {
+                setError('Ticket number is required (or check Transient)');
+                return;
+            }
         }
-        const newData = ticket ? { ticket, notes } : null;
+        
+        if (ticket) {
+            const duplicate = window.checkDuplicateTicket(ticket, lot, stall, false, lotD, lotX, lotY, overflowX, overflowY);
+            if (duplicate) {
+                if (duplicate.overflow) {
+                    setError(`Ticket already exists in Lot ${duplicate.lot} - ${duplicate.overflow}`);
+                } else {
+                    setError(`Ticket already exists in Lot ${duplicate.lot} - Stall ${duplicate.stall}`);
+                }
+                return;
+            }
+        }
+        
+        const newData = (ticket || isTransient) ? { ticket: ticket || '', notes, isTransient } : null;
         if (lot === 'D') {
             if (!newData) {
                 const newLotD = { ...lotD };
@@ -159,15 +170,31 @@ window.StallEditor = ({ stall, lot, onClose, lotD, lotX, lotY, setLotD, setLotX,
                     </div>
                 )}
                 <div>
+                    <div className="flex items-center gap-2 mb-3">
+                        <input
+                            type="checkbox"
+                            id="transient-check"
+                            checked={isTransient}
+                            onChange={(e) => {
+                                setIsTransient(e.target.checked);
+                                setError('');
+                            }}
+                            className="w-4 h-4 cursor-pointer"
+                        />
+                        <label htmlFor="transient-check" className="text-sm font-medium cursor-pointer">
+                            Transient (No ticket number required)
+                        </label>
+                    </div>
                     <label className="block text-sm font-medium mb-1">Ticket Number</label>
                     <input
                         type="text"
                         value={ticket}
                         onChange={(e) => handleTicketChange(e.target.value)}
-                        placeholder="6-digit ticket"
+                        placeholder={isTransient ? "Optional" : "6-digit ticket"}
                         maxLength="6"
                         inputMode="numeric"
-                        className={`w-full px-3 py-2 border rounded ${error ? 'border-red-500' : ''}`}
+                        pattern="[0-9]*"
+                        className={`w-full px-3 py-2 border rounded ${error ? 'border-red-500' : ''} ${isTransient ? 'bg-gray-100' : ''}`}
                         disabled={lot !== 'D' && !!blockingInfo}
                     />
                     {error && (
@@ -186,7 +213,7 @@ window.StallEditor = ({ stall, lot, onClose, lotD, lotX, lotY, setLotD, setLotX,
                             Cannot edit - car is blocked by overflow.
                         </p>
                     )}
-                    {!error && ticket && ticket.length < 6 && (
+                    {!error && !isTransient && ticket && ticket.length < 6 && (
                         <p className="text-xs text-gray-500 mt-1">
                             {6 - ticket.length} more digit{6 - ticket.length !== 1 ? 's' : ''} needed
                         </p>
@@ -235,6 +262,7 @@ window.OverflowEditor = ({ lot, ofId, onClose, lotX, lotY, overflowX, overflowY,
     const isNew = !overflowData[ofId];
     const [ticket, setTicket] = useState(overflowData[ofId]?.ticket || '');
     const [notes, setNotes] = useState(overflowData[ofId]?.notes || '');
+    const [isTransient, setIsTransient] = useState(overflowData[ofId]?.isTransient || false);
     const [selectedStalls, setSelectedStalls] = useState(overflowData[ofId]?.blocks || []);
     const [error, setError] = useState('');
     const availableStalls = lot === 'X' ? window.LOT_X_STALLS : window.LOT_Y_STALLS;
@@ -253,24 +281,30 @@ window.OverflowEditor = ({ lot, ofId, onClose, lotX, lotY, overflowX, overflowY,
     };
 
     const handleSave = () => {
-        if (!ticket) {
-            setError('Ticket number is required');
-            return;
-        }
-        if (ticket.length !== 6) {
-            setError('Ticket number must be exactly 6 digits');
-            return;
-        }
-        const duplicate = window.checkDuplicateTicket(ticket, lot, ofId, true, lotD, lotX, lotY, overflowX, overflowY);
-        if (duplicate) {
-            if (duplicate.overflow) {
-                setError(`Ticket already exists in Lot ${duplicate.lot} - ${duplicate.overflow}`);
-            } else {
-                setError(`Ticket already exists in Lot ${duplicate.lot} - Stall ${duplicate.stall}`);
+        if (!isTransient) {
+            if (!ticket) {
+                setError('Ticket number is required (or check Transient)');
+                return;
             }
-            return;
+            if (ticket.length !== 6) {
+                setError('Ticket number must be exactly 6 digits');
+                return;
+            }
         }
-        const newData = { ticket, notes, blocks: selectedStalls };
+        
+        if (ticket) {
+            const duplicate = window.checkDuplicateTicket(ticket, lot, ofId, true, lotD, lotX, lotY, overflowX, overflowY);
+            if (duplicate) {
+                if (duplicate.overflow) {
+                    setError(`Ticket already exists in Lot ${duplicate.lot} - ${duplicate.overflow}`);
+                } else {
+                    setError(`Ticket already exists in Lot ${duplicate.lot} - Stall ${duplicate.stall}`);
+                }
+                return;
+            }
+        }
+        
+        const newData = { ticket: ticket || '', notes, blocks: selectedStalls, isTransient };
         if (lot === 'X') {
             setOverflowX({ ...overflowX, [ofId]: newData });
         } else {
@@ -303,15 +337,31 @@ window.OverflowEditor = ({ lot, ofId, onClose, lotX, lotY, overflowX, overflowY,
                 </div>
                 <div className="space-y-4">
                     <div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <input
+                                type="checkbox"
+                                id="transient-overflow-check"
+                                checked={isTransient}
+                                onChange={(e) => {
+                                    setIsTransient(e.target.checked);
+                                    setError('');
+                                }}
+                                className="w-4 h-4 cursor-pointer"
+                            />
+                            <label htmlFor="transient-overflow-check" className="text-sm font-medium cursor-pointer">
+                                Transient (No ticket number required)
+                            </label>
+                        </div>
                         <label className="block text-sm font-medium mb-1">Ticket Number</label>
                         <input
                             type="text"
                             value={ticket}
                             onChange={(e) => handleTicketChange(e.target.value)}
-                            placeholder="6-digit ticket"
+                            placeholder={isTransient ? "Optional" : "6-digit ticket"}
                             maxLength="6"
                             inputMode="numeric"
-                            className={`w-full px-3 py-2 border rounded ${error ? 'border-red-500' : ''}`}
+                            pattern="[0-9]*"
+                            className={`w-full px-3 py-2 border rounded ${error ? 'border-red-500' : ''} ${isTransient ? 'bg-gray-100' : ''}`}
                         />
                         {error && (
                             <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
@@ -319,7 +369,7 @@ window.OverflowEditor = ({ lot, ofId, onClose, lotX, lotY, overflowX, overflowY,
                                 {error}
                             </p>
                         )}
-                        {!error && ticket && ticket.length < 6 && (
+                        {!error && !isTransient && ticket && ticket.length < 6 && (
                             <p className="text-xs text-gray-500 mt-1">
                                 {6 - ticket.length} more digit{6 - ticket.length !== 1 ? 's' : ''} needed
                             </p>
