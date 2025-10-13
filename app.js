@@ -1,4 +1,86 @@
-const { useState, useEffect } = React;
+    const OverflowSpot = ({ id, lot }) => {
+        const overflowData = lot === 'X' ? overflowX : overflowY;
+        const data = overflowData[id];
+        const isTransient = data?.isTransient || false;
+        const isOccupied = !!data;
+        const isHighlighted = searchResult && searchResult.overflow === id && searchResult.lot === lot;
+        const isInMoveMode = moveMode && moveMode.type === 'overflow' && moveMode.lot === lot && moveMode.id === id;
+
+        let borderColor, bgColor, ringColor;
+        
+        if (isInMoveMode) {
+            bgColor = 'bg-blue-200';
+            borderColor = 'border-blue-600';
+            ringColor = 'ring-4 ring-blue-400 animate-pulse';
+        } else if (isHighlighted) {
+            borderColor = 'border-yellow-400';
+            bgColor = 'bg-yellow-100';
+            ringColor = 'ring-4 ring-yellow-300';
+        } else if (isOccupied) {
+            borderColor = isTransient ? 'border-purple-500' : 'border-orange-500';
+            bgColor = isTransient ? 'bg-purple-100' : 'bg-orange-100';
+            ringColor = '';
+        } else {
+            borderColor = 'border-gray-400';
+            bgColor = 'bg-gray-50';
+            ringColor = '';
+        }
+
+        return (
+            <div
+                onTouchStart={() => handleLongPressStart('overflow', lot, id, data)}
+                onTouchEnd={handleLongPressEnd}
+                onTouchCancel={handleLongPressEnd}
+                onMouseDown={() => handleLongPressStart('overflow', lot, id, data)}
+                onMouseUp={handleLongPressEnd}
+                onMouseLeave={handleLongPressEnd}
+                onClick={(e) => {
+                    e.preventDefault();
+                    handleStallClick('overflow', lot, id);
+                }}
+                style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
+                className={`min-h-16 p-2 rounded text-xs font-medium border-2 transition-all ${bgColor} ${borderColor} ${ringColor} cursor-pointer`}
+            >
+                <div className="font-bold">{id}</div>
+                {data && (
+                    <div className="mt-1">
+                        {isTransient && !data.ticket && <div className="text-[10px] italic text-purple-700">Transient</div>}
+                        {data.ticket && <div className="text-[10px] truncate">{data.ticket}</div>}
+                        {isTransient && data.ticket && <div className="text-[9px] italic text-purple-700">Transient</div>}
+                        {data.notes && <div className="text-[9px] text-gray-600 mt-0.5 italic truncate">{data.notes}</div>}
+                        {data.blocks && data.blocks.length > 0 && (
+                            <div className="text-[9px] text-orange-700 mt-1">
+                                Blocks: {data.blocks.join(', ')}
+                            </div>
+                        )}
+                    </div>
+                )}
+                {!data && <div className="text-[9px] text-gray-500 mt-1">Empty</div>}
+            </div>
+        );
+    };
+
+    return (
+        <div className="min-h-screen bg-gray-100 p-4">
+            <div className="max-w-7xl mx-auto">
+                <div className="header-container">
+                    <div className="logo-container">
+                        <h1 className="header-title">Valet Parking Management</h1>
+                    </div>
+                </div>
+                
+                {moveMode && (
+                    <div className="bg-blue-600 text-white p-4 rounded-lg shadow-lg mb-4 text-center font-semibold">
+                        <div className="text-lg">Move Mode Active</div>
+                        <div className="text-sm mt-1">
+                            Moving: {moveMode.type === 'stall' ? 'Stall' : 'Overflow'} {moveMode.id} from Lot {moveMode.lot}
+                        </div>
+                        <div className="text-sm mt-1">Tap destination or tap same stall to cancel</div>
+                    </div>
+                )}
+                
+                <div className="bg-white rounded-lg shadow p-4 mb-4">
+                const { useState, useEffect } = React;
 
 function ValetParkingApp() {
     const [lotD, setLotD] = useState(() => window.migrateData(localStorage.getItem('lotD')));
@@ -25,8 +107,8 @@ function ValetParkingApp() {
     const [editingOverflow, setEditingOverflow] = useState(null);
     const [searchResult, setSearchResult] = useState(null);
     const [showClearAllConfirm, setShowClearAllConfirm] = useState(null);
-    const [draggedItem, setDraggedItem] = useState(null);
-    const [isDragging, setIsDragging] = useState(false);
+    const [moveMode, setMoveMode] = useState(null); // { type: 'stall'|'overflow', lot: 'X'|'Y'|'D', id: 'X1' }
+    const [longPressTimer, setLongPressTimer] = useState(null);
 
     const handleSearch = () => {
         if (!searchTerm) {
@@ -103,34 +185,47 @@ function ValetParkingApp() {
         setShowClearAllConfirm(null);
     };
 
-    const handleDragStart = (e, sourceType, sourceLot, sourceId, data) => {
-        if (!data) return;
-        e.stopPropagation();
-        setIsDragging(true);
-        setDraggedItem({ type: sourceType, lot: sourceLot, id: sourceId, data });
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', sourceId);
-    };
-
-    const handleDragOver = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        e.dataTransfer.dropEffect = 'move';
-    };
-
-    const handleDrop = (e, targetType, targetLot, targetId) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const handleLongPressStart = (type, lot, id, data) => {
+        if (!data) return; // Can't move empty stalls
         
-        if (!draggedItem) return;
+        const timer = setTimeout(() => {
+            setMoveMode({ type, lot, id, data });
+        }, 500); // 500ms long press
+        
+        setLongPressTimer(timer);
+    };
 
-        const sourceType = draggedItem.type;
-        const sourceLot = draggedItem.lot;
-        const sourceId = draggedItem.id;
-        const sourceData = draggedItem.data;
+    const handleLongPressEnd = () => {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            setLongPressTimer(null);
+        }
+    };
 
+    const handleStallClick = (type, lot, id) => {
+        // If in move mode, this is the destination
+        if (moveMode) {
+            handleMove(type, lot, id);
+            return;
+        }
+        
+        // Otherwise, open editor
+        if (type === 'stall') {
+            setEditingStall({ stall: id, lot });
+        } else {
+            setEditingOverflow({ lot, ofId: id });
+        }
+    };
+
+    const handleMove = (targetType, targetLot, targetId) => {
+        const sourceType = moveMode.type;
+        const sourceLot = moveMode.lot;
+        const sourceId = moveMode.id;
+        const sourceData = moveMode.data;
+
+        // Cancel if clicking the same spot
         if (sourceType === targetType && sourceLot === targetLot && sourceId === targetId) {
-            setDraggedItem(null);
+            setMoveMode(null);
             return;
         }
 
@@ -142,15 +237,17 @@ function ValetParkingApp() {
             targetData = targetOverflow[targetId];
         }
 
+        // Check if target is blocked
         if (targetType === 'stall') {
             const blockInfo = window.getBlockingInfo(targetLot, targetId, lotD, lotX, lotY, overflowX, overflowY);
             if (blockInfo && targetLot !== 'D') {
                 alert('Cannot move to a blocked stall!');
-                setDraggedItem(null);
+                setMoveMode(null);
                 return;
             }
         }
 
+        // Perform the move/swap
         if (sourceType === 'stall' && targetType === 'stall') {
             if (sourceLot === 'D') {
                 const newLotD = { ...lotD };
@@ -306,8 +403,7 @@ function ValetParkingApp() {
             }
         }
 
-        setDraggedItem(null);
-        setIsDragging(false);
+        setMoveMode(null);
     };
 
     const Stall = ({ id, lot, data }) => {
@@ -317,11 +413,15 @@ function ValetParkingApp() {
         const isOccupied = !!ticketValue || isTransient;
         const blockingInfo = window.getBlockingInfo(lot, id, lotD, lotX, lotY, overflowX, overflowY);
         const isHighlighted = searchResult && searchResult.lot === lot && searchResult.stall === id && !searchResult.overflow;
-        const isDragOver = draggedItem && draggedItem.id !== id;
+        const isInMoveMode = moveMode && moveMode.type === 'stall' && moveMode.lot === lot && moveMode.id === id;
 
         let bgColor, borderColor, ringColor;
         
-        if (blockingInfo) {
+        if (isInMoveMode) {
+            bgColor = 'bg-blue-200';
+            borderColor = 'border-blue-600';
+            ringColor = 'ring-4 ring-blue-400 animate-pulse';
+        } else if (blockingInfo) {
             bgColor = 'bg-red-100';
             borderColor = 'border-red-400';
             ringColor = '';
@@ -339,28 +439,20 @@ function ValetParkingApp() {
             ringColor = 'hover:bg-gray-50';
         }
 
-        if (isDragOver) {
-            borderColor = 'border-blue-500';
-            ringColor = 'ring-2 ring-blue-300';
-        }
-
         return (
             <div
-                draggable={isOccupied}
-                onDragStart={(e) => isOccupied && handleDragStart(e, 'stall', lot, id, data)}
-                onDragOver={handleDragOver}
-                onDrop={(e) => handleDrop(e, 'stall', lot, id)}
-                onDragEnd={() => {
-                    setDraggedItem(null);
-                    setIsDragging(false);
-                }}
+                onTouchStart={() => handleLongPressStart('stall', lot, id, data)}
+                onTouchEnd={handleLongPressEnd}
+                onTouchCancel={handleLongPressEnd}
+                onMouseDown={() => handleLongPressStart('stall', lot, id, data)}
+                onMouseUp={handleLongPressEnd}
+                onMouseLeave={handleLongPressEnd}
                 onClick={(e) => {
-                    if (!isDragging) {
-                        setEditingStall({ stall: id, lot });
-                    }
+                    e.preventDefault();
+                    handleStallClick('stall', lot, id);
                 }}
-                style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
-                className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor} ${isOccupied ? 'cursor-move' : 'cursor-pointer'}`}
+                style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
+                className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor} cursor-pointer`}
             >
                 <div className="font-bold text-sm">{id}</div>
                 {isTransient && !ticketValue && <div className="text-[10px] mt-1 italic text-purple-700">Transient</div>}
