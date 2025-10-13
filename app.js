@@ -81,6 +81,33 @@
                 
                 <div className="bg-white rounded-lg shadow p-4 mb-4">
                     <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                            placeholder="Enter 6-digit ticket number"
+                            maxLength="6"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            className="flex-1 px-4 py-2 border rounded"
+                        />
+                        <button
+                            onClick={handleSearch}
+                            className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+                        >
+                            <Search size={20} />
+                            Search
+                        </button>
+                        {searchResult && (
+                            <button
+                                onClick={() => { setSearchResult(null); setSearchTerm(''); }}
+                                className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
                 const { useState, useEffect } = React;
 
 function ValetParkingApp() {
