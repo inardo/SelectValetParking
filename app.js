@@ -107,23 +107,25 @@ function ValetParkingApp() {
         if (!data) return;
         const timer = setTimeout(() => {
             setMoveMode({ type, lot, id, data });
-            setLongPressTimer('activated'); // Mark that long press activated
         }, 500);
         setLongPressTimer(timer);
     };
 
     const handleLongPressEnd = () => {
-        if (longPressTimer && longPressTimer !== 'activated') {
+        if (longPressTimer) {
             clearTimeout(longPressTimer);
+            setLongPressTimer(null);
         }
-        setLongPressTimer(null);
     };
 
     const handleStallClick = (type, lot, id) => {
+        // If in move mode, complete the move
         if (moveMode) {
             handleMove(type, lot, id);
             return;
         }
+        
+        // Otherwise open the editor (this will happen on click/tap)
         if (type === 'stall') {
             setEditingStall({ stall: id, lot });
         } else {
@@ -352,20 +354,35 @@ function ValetParkingApp() {
 
         return (
             <div
-                onTouchStart={() => !moveMode && handleLongPressStart('stall', lot, id, data)}
-                onTouchEnd={handleLongPressEnd}
-                onTouchCancel={handleLongPressEnd}
-                onMouseDown={() => !moveMode && handleLongPressStart('stall', lot, id, data)}
-                onMouseUp={handleLongPressEnd}
-                onMouseLeave={handleLongPressEnd}
+                onMouseDown={(e) => {
+                    if (!moveMode) {
+                        handleLongPressStart('stall', lot, id, data);
+                    }
+                }}
+                onMouseUp={(e) => {
+                    handleLongPressEnd();
+                }}
+                onMouseLeave={(e) => {
+                    handleLongPressEnd();
+                }}
+                onTouchStart={(e) => {
+                    if (!moveMode) {
+                        handleLongPressStart('stall', lot, id, data);
+                    }
+                }}
+                onTouchEnd={(e) => {
+                    handleLongPressEnd();
+                }}
+                onTouchCancel={(e) => {
+                    handleLongPressEnd();
+                }}
                 onClick={(e) => {
                     e.preventDefault();
-                    // Only open editor if long press didn't activate
-                    if (longPressTimer !== 'activated') {
-                        handleStallClick('stall', lot, id);
-                    } else if (moveMode) {
-                        handleStallClick('stall', lot, id);
-                    }
+                    setTimeout(() => {
+                        if (!moveMode || moveMode.id !== id || moveMode.lot !== lot) {
+                            handleStallClick('stall', lot, id);
+                        }
+                    }, 50);
                 }}
                 style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
                 className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor} cursor-pointer`}
@@ -423,20 +440,35 @@ function ValetParkingApp() {
 
         return (
             <div
-                onTouchStart={() => !moveMode && handleLongPressStart('overflow', lot, id, data)}
-                onTouchEnd={handleLongPressEnd}
-                onTouchCancel={handleLongPressEnd}
-                onMouseDown={() => !moveMode && handleLongPressStart('overflow', lot, id, data)}
-                onMouseUp={handleLongPressEnd}
-                onMouseLeave={handleLongPressEnd}
+                onMouseDown={(e) => {
+                    if (!moveMode) {
+                        handleLongPressStart('overflow', lot, id, data);
+                    }
+                }}
+                onMouseUp={(e) => {
+                    handleLongPressEnd();
+                }}
+                onMouseLeave={(e) => {
+                    handleLongPressEnd();
+                }}
+                onTouchStart={(e) => {
+                    if (!moveMode) {
+                        handleLongPressStart('overflow', lot, id, data);
+                    }
+                }}
+                onTouchEnd={(e) => {
+                    handleLongPressEnd();
+                }}
+                onTouchCancel={(e) => {
+                    handleLongPressEnd();
+                }}
                 onClick={(e) => {
                     e.preventDefault();
-                    // Only open editor if long press didn't activate
-                    if (longPressTimer !== 'activated') {
-                        handleStallClick('stall', lot, id);
-                    } else if (moveMode) {
-                        handleStallClick('stall', lot, id);
-                    }
+                    setTimeout(() => {
+                        if (!moveMode || moveMode.id !== id || moveMode.lot !== lot) {
+                            handleStallClick('overflow', lot, id);
+                        }
+                    }, 50);
                 }}
                 style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
                 className={`min-h-16 p-2 rounded text-xs font-medium border-2 transition-all ${bgColor} ${borderColor} ${ringColor} cursor-pointer`}
