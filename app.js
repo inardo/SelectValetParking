@@ -107,19 +107,24 @@ function ValetParkingApp() {
         setShowClearAllConfirm(null);
     };
 
-const handleLongPressStart = (type, lot, id, data) => {
-        setDebugInfo(`START: ${type} ${lot} ${id}`);
-        if (!data || moveMode) return;
+    const handleLongPressStart = (type, lot, id, data) => {
+        setDebugInfo(`START: ${type} ${lot} ${id} at ${Date.now()}`);
+        if (!data) return;
+        if (moveMode) {
+            setDebugInfo(`Already in move mode - ignoring start`);
+            return;
+        }
         const timer = setTimeout(() => {
-            setDebugInfo('LONG PRESS ACTIVATED!');
+            setDebugInfo(`LONG PRESS ACTIVATED at ${Date.now()}`);
             setMoveMode({ type, lot, id, data });
-        }, 600);
+        }, 700);  // Increased to 700ms
         setLongPressTimer(timer);
     };
 
     const handleLongPressEnd = (e, type, lot, id) => {
+        const endTime = Date.now();
         const wasQuickTap = longPressTimer && typeof longPressTimer === 'number';
-        setDebugInfo(`END: Quick=${wasQuickTap} Move=${!!moveMode} Type=${type}`);
+        setDebugInfo(`END: ${endTime} Quick=${wasQuickTap} Move=${!!moveMode}`);
         
         if (longPressTimer && typeof longPressTimer === 'number') {
             clearTimeout(longPressTimer);
@@ -128,19 +133,19 @@ const handleLongPressStart = (type, lot, id, data) => {
         
         if (wasQuickTap && type && lot && id !== undefined) {
             if (moveMode) {
-                setDebugInfo('COMPLETING MOVE');
+                setDebugInfo(`Move mode: completing move to ${id}`);
                 setTimeout(() => {
                     handleMove(type, lot, id);
-                }, 50);
+                }, 10);
             } else {
-                setDebugInfo('OPENING EDITOR');
+                setDebugInfo(`No move mode: opening editor for ${id}`);
                 setTimeout(() => {
                     if (type === 'stall') {
                         setEditingStall({ stall: id, lot });
                     } else {
                         setEditingOverflow({ lot, ofId: id });
                     }
-                }, 50);
+                }, 10);
             }
         }
     };
@@ -497,7 +502,7 @@ const handleLongPressStart = (type, lot, id, data) => {
                         <h1 className="header-title">Valet Parking Management</h1>
                     </div>
                     <div className="text-white text-xs text-center mt-2 opacity-75">
-                        v1.0.65 - Touch Debug
+                        v1.0.7 - Touch Debug
                     </div>
                 </div>
                 
