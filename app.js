@@ -351,10 +351,10 @@ function ValetParkingApp() {
 
         return (
             <div
-                onTouchStart={() => handleLongPressStart('stall', lot, id, data)}
+                onTouchStart={() => !moveMode && handleLongPressStart('stall', lot, id, data)}
                 onTouchEnd={handleLongPressEnd}
                 onTouchCancel={handleLongPressEnd}
-                onMouseDown={() => handleLongPressStart('stall', lot, id, data)}
+                onMouseDown={() => !moveMode && handleLongPressStart('stall', lot, id, data)}
                 onMouseUp={handleLongPressEnd}
                 onMouseLeave={handleLongPressEnd}
                 onClick={(e) => {
@@ -417,10 +417,10 @@ function ValetParkingApp() {
 
         return (
             <div
-                onTouchStart={() => handleLongPressStart('overflow', lot, id, data)}
+                onTouchStart={() => !moveMode && handleLongPressStart('overflow', lot, id, data)}
                 onTouchEnd={handleLongPressEnd}
                 onTouchCancel={handleLongPressEnd}
-                onMouseDown={() => handleLongPressStart('overflow', lot, id, data)}
+                onMouseDown={() => !moveMode && handleLongPressStart('overflow', lot, id, data)}
                 onMouseUp={handleLongPressEnd}
                 onMouseLeave={handleLongPressEnd}
                 onClick={(e) => {
