@@ -107,15 +107,16 @@ function ValetParkingApp() {
         if (!data) return;
         const timer = setTimeout(() => {
             setMoveMode({ type, lot, id, data });
+            setLongPressTimer('activated'); // Mark that long press activated
         }, 500);
         setLongPressTimer(timer);
     };
 
     const handleLongPressEnd = () => {
-        if (longPressTimer) {
+        if (longPressTimer && longPressTimer !== 'activated') {
             clearTimeout(longPressTimer);
-            setLongPressTimer(null);
         }
+        setLongPressTimer(null);
     };
 
     const handleStallClick = (type, lot, id) => {
@@ -359,7 +360,12 @@ function ValetParkingApp() {
                 onMouseLeave={handleLongPressEnd}
                 onClick={(e) => {
                     e.preventDefault();
-                    handleStallClick('stall', lot, id);
+                    // Only open editor if long press didn't activate
+                    if (longPressTimer !== 'activated') {
+                        handleStallClick('stall', lot, id);
+                    } else if (moveMode) {
+                        handleStallClick('stall', lot, id);
+                    }
                 }}
                 style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
                 className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor} cursor-pointer`}
@@ -425,7 +431,12 @@ function ValetParkingApp() {
                 onMouseLeave={handleLongPressEnd}
                 onClick={(e) => {
                     e.preventDefault();
-                    handleStallClick('overflow', lot, id);
+                    // Only open editor if long press didn't activate
+                    if (longPressTimer !== 'activated') {
+                        handleStallClick('stall', lot, id);
+                    } else if (moveMode) {
+                        handleStallClick('stall', lot, id);
+                    }
                 }}
                 style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
                 className={`min-h-16 p-2 rounded text-xs font-medium border-2 transition-all ${bgColor} ${borderColor} ${ringColor} cursor-pointer`}
