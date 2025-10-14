@@ -106,36 +106,48 @@ function ValetParkingApp() {
     };
 
     const handleLongPressStart = (type, lot, id, data) => {
+        console.log('=== handleLongPressStart ===', type, lot, id);
         if (!data || moveMode) return;
         const timer = setTimeout(() => {
+            console.log('Long press activated!');
             setMoveMode({ type, lot, id, data });
         }, 500);
         setLongPressTimer(timer);
     };
 
     const handleLongPressEnd = (e) => {
+        console.log('=== handleLongPressEnd ===');
         if (longPressTimer) {
+            console.log('Clearing timer');
             clearTimeout(longPressTimer);
             setLongPressTimer(null);
         }
     };
 
     const handleStallClick = (e, type, lot, id) => {
+        console.log('=== handleStallClick ===');
+        console.log('moveMode:', moveMode);
+        console.log('longPressTimer:', longPressTimer);
+        console.log('type:', type, 'lot:', lot, 'id:', id);
+        
         e.preventDefault();
         e.stopPropagation();
         
         // If in move mode, complete the move
         if (moveMode) {
+            console.log('In move mode - calling handleMove');
             handleMove(type, lot, id);
             return;
         }
         
         // If there's a long press timer active, don't open editor
         if (longPressTimer) {
+            console.log('Long press timer active - ignoring click');
             return;
         }
         
         // Otherwise open the editor
+        console.log('Opening editor');
         if (type === 'stall') {
             setEditingStall({ stall: id, lot });
         } else {
