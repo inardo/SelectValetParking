@@ -105,49 +105,52 @@ function ValetParkingApp() {
         setShowClearAllConfirm(null);
     };
 
-    const handleLongPressStart = (type, lot, id, data) => {
+const handleLongPressStart = (type, lot, id, data) => {
         console.log('=== handleLongPressStart ===', type, lot, id);
         if (!data || moveMode) return;
         const timer = setTimeout(() => {
             console.log('Long press activated!');
             setMoveMode({ type, lot, id, data });
-        }, 500);
+        }, 600);  // Changed from 500 to 600ms for better iPad detection
         setLongPressTimer(timer);
     };
 
-    const handleLongPressEnd = (e, type, lot, id) => {
+ const handleLongPressEnd = (e, type, lot, id) => {
         console.log('=== handleLongPressEnd ===');
+        console.log('Event type:', e?.type);
         console.log('longPressTimer exists:', !!longPressTimer);
         console.log('moveMode:', moveMode);
         
-        // Only open editor if:
-        // 1. Timer still exists (wasn't a long press)
-        // 2. We're NOT already in move mode
-        // 3. We have the necessary parameters
+        // Check if timer still exists (quick tap) and it's a number (not yet fired)
         const wasQuickTap = longPressTimer && typeof longPressTimer === 'number';
         
-        if (longPressTimer) {
-            console.log('Clearing timer');
+        if (longPressTimer && typeof longPressTimer === 'number') {
+            console.log('Clearing timer - was a quick tap');
             clearTimeout(longPressTimer);
-            setLongPressTimer(null);
         }
+        setLongPressTimer(null);
         
-        // If it was a quick tap, not in move mode, and we have params, open editor
-        if (wasQuickTap && !moveMode && type && lot && id !== undefined) {
-            console.log('Quick tap detected - opening editor');
-            setTimeout(() => {
-                if (type === 'stall') {
-                    setEditingStall({ stall: id, lot });
-                } else {
-                    setEditingOverflow({ lot, ofId: id });
-                }
-            }, 10);
-        } else if (moveMode && type && lot && id !== undefined) {
-            // If we're in move mode, complete the move
-            console.log('In move mode - completing move');
-            setTimeout(() => {
-                handleMove(type, lot, id);
-            }, 10);
+        // Handle quick tap - open editor or complete move
+        if (wasQuickTap && type && lot && id !== undefined) {
+            console.log('Quick tap detected');
+            
+            if (moveMode) {
+                console.log('Completing move');
+                // Small delay to ensure state is ready
+                setTimeout(() => {
+                    handleMove(type, lot, id);
+                }, 50);
+            } else {
+                console.log('Opening editor');
+                // Small delay to ensure state is ready
+                setTimeout(() => {
+                    if (type === 'stall') {
+                        setEditingStall({ stall: id, lot });
+                    } else {
+                        setEditingOverflow({ lot, ofId: id });
+                    }
+                }, 50);
+            }
         }
     };
 
@@ -503,7 +506,7 @@ function ValetParkingApp() {
                         <h1 className="header-title">Valet Parking Management</h1>
                     </div>
                     <div className="text-white text-xs text-center mt-2 opacity-75">
-                        v1.0.5 - Long Press Move
+                        v1.0.6 - Long Press Move - Ipad fix
                     </div>
                 </div>
                 
