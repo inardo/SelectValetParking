@@ -26,11 +26,8 @@ function ValetParkingApp() {
     const [searchResult, setSearchResult] = useState(null);
     const [showClearAllConfirm, setShowClearAllConfirm] = useState(null);
     const [moveMode, setMoveMode] = useState(null);
-    const [longPressTimer, setLongPressTimer] = useState(null);
 
     const [debugInfo, setDebugInfo] = useState('');
-
-    const [isLongPressing, setIsLongPressing] = useState(false);
 
     const handleSearch = () => {
         if (!searchTerm) {
@@ -107,83 +104,25 @@ function ValetParkingApp() {
         setShowClearAllConfirm(null);
     };
 
-    const handleLongPressStart = (e, type, lot, id, data) => {
-        if (e) e.preventDefault(); // Prevent default touch behavior
-        setDebugInfo(`START: ${type} ${lot} ${id}`);
-        if (!data) return;
-        if (moveMode) {
-            setDebugInfo(`Already in move mode`);
-            return;
-        }
-        const timer = setTimeout(() => {
-            setDebugInfo(`LONG PRESS ACTIVATED!`);
-            setMoveMode({ type, lot, id, data });
-        }, 600);
-        setLongPressTimer(timer);
-    };
 
-    const handleLongPressEnd = (e, type, lot, id) => {
-        if (e) e.preventDefault();
-        const wasQuickTap = longPressTimer && typeof longPressTimer === 'number';
-        setDebugInfo(`END: Quick=${wasQuickTap} Move=${!!moveMode}`);
-        
-        if (longPressTimer && typeof longPressTimer === 'number') {
-            clearTimeout(longPressTimer);
-        }
-        setLongPressTimer(null);
-        
-        if (wasQuickTap && type && lot && id !== undefined) {
-            if (moveMode) {
-                setDebugInfo(`Completing move`);
-                handleMove(type, lot, id);
-            } else {
-                setDebugInfo(`Opening editor`);
-                if (type === 'stall') {
-                    setEditingStall({ stall: id, lot });
-                } else {
-                    setEditingOverflow({ lot, ofId: id });
-                }
-            }
-        }
-    };
-
-    const handleTouchMove = () => {
-        if (longPressTimer) {
-            setDebugInfo('Touch moved - canceling');
-            clearTimeout(longPressTimer);
-            setLongPressTimer(null);
-        }
-    };
-
-    const handleStallClick = (e, type, lot, id) => {
-        console.log('=== handleStallClick ===');
-        console.log('moveMode:', moveMode);
-        console.log('longPressTimer:', longPressTimer);
-        console.log('type:', type, 'lot:', lot, 'id:', id);
-        
-        e.preventDefault();
-        e.stopPropagation();
-        
+const handleStallClick = (type, lot, id) => {
         // If in move mode, complete the move
         if (moveMode) {
-            console.log('In move mode - calling handleMove');
             handleMove(type, lot, id);
             return;
         }
         
-        // If there's a long press timer active, don't open editor
-        if (longPressTimer) {
-            console.log('Long press timer active - ignoring click');
-            return;
-        }
-        
         // Otherwise open the editor
-        console.log('Opening editor');
         if (type === 'stall') {
             setEditingStall({ stall: id, lot });
         } else {
             setEditingOverflow({ lot, ofId: id });
         }
+    };
+    
+    const handleStartMove = (type, lot, id, data) => {
+        setDebugInfo(`Move mode started for ${id}`);
+        setMoveMode({ type, lot, id, data });
     };
 
     const handleMove = (targetType, targetLot, targetId) => {
@@ -407,16 +346,8 @@ function ValetParkingApp() {
 
         return (
             <div
-                onMouseDown={(e) => handleLongPressStart(e, 'stall', lot, id, data)}
-                onMouseUp={(e) => handleLongPressEnd(e, 'stall', lot, id)}
-                onMouseLeave={(e) => handleLongPressEnd(e)}
-                onTouchStart={(e) => handleLongPressStart(e, 'stall', lot, id, data)}
-                onTouchEnd={(e) => handleLongPressEnd(e, 'stall', lot, id)}
-                onTouchMove={handleTouchMove}
-                onTouchCancel={(e) => handleLongPressEnd(e)}
-                onClick={(e) => handleStallClick(e, 'stall', lot, id)}
-                style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
-                className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor} cursor-pointer`}
+                onClick={() => handleStallClick('stall', lot, id)}
+                className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor} cursor-pointer relative`}
             >
                 <div className="font-bold text-sm">{id}</div>
                 {isTransient && !ticketValue && <div className="text-[10px] mt-1 italic text-purple-700">Transient</div>}
@@ -436,6 +367,17 @@ function ValetParkingApp() {
                     <div className="text-[9px] text-red-700 mt-1 font-semibold">
                         Blocked by {blockingInfo.ofId}
                     </div>
+                )}
+                {isOccupied && !moveMode && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartMove('stall', lot, id, data);
+                        }}
+                        className="absolute bottom-1 right-1 bg-blue-500 text-white text-[9px] px-2 py-0.5 rounded hover:bg-blue-600"
+                    >
+                        Move
+                    </button>
                 )}
             </div>
         );
@@ -471,16 +413,8 @@ function ValetParkingApp() {
 
         return (
             <div
-                onMouseDown={(e) => handleLongPressStart(e, 'overflow', lot, id, data)}
-                onMouseUp={(e) => handleLongPressEnd(e, 'overflow', lot, id)}
-                onMouseLeave={(e) => handleLongPressEnd(e)}
-                onTouchStart={(e) => handleLongPressStart(e, 'overflow', lot, id, data)}
-                onTouchEnd={(e) => handleLongPressEnd(e, 'overflow', lot, id)}
-                onTouchMove={handleTouchMove}
-                onTouchCancel={(e) => handleLongPressEnd(e)}
-                onClick={(e) => handleStallClick(e, 'overflow', lot, id)}
-                style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
-                className={`min-h-16 p-2 rounded text-xs font-medium border-2 transition-all ${bgColor} ${borderColor} ${ringColor} cursor-pointer`}
+                onClick={() => handleStallClick('overflow', lot, id)}
+                className={`min-h-16 p-2 rounded text-xs font-medium border-2 transition-all ${bgColor} ${borderColor} ${ringColor} cursor-pointer relative`}
             >
                 <div className="font-bold">{id}</div>
                 {data && (
@@ -497,6 +431,17 @@ function ValetParkingApp() {
                     </div>
                 )}
                 {!data && <div className="text-[9px] text-gray-500 mt-1">Empty</div>}
+                {isOccupied && !moveMode && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartMove('overflow', lot, id, data);
+                        }}
+                        className="absolute bottom-1 right-1 bg-blue-500 text-white text-[9px] px-2 py-0.5 rounded hover:bg-blue-600"
+                    >
+                        Move
+                    </button>
+                )}
             </div>
         );
     };
@@ -509,7 +454,7 @@ function ValetParkingApp() {
                         <h1 className="header-title">Valet Parking Management</h1>
                     </div>
                     <div className="text-white text-xs text-center mt-2 opacity-75">
-                        v1.0.8 - Touch Debug
+                        v1.0.9 - move button
                     </div>
                 </div>
                 
