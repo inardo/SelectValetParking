@@ -28,6 +28,8 @@ function ValetParkingApp() {
     const [moveMode, setMoveMode] = useState(null);
     const [longPressTimer, setLongPressTimer] = useState(null);
 
+    const [isLongPressing, setIsLongPressing] = useState(false);
+
     const handleSearch = () => {
         if (!searchTerm) {
             setSearchResult(null);
@@ -105,6 +107,7 @@ function ValetParkingApp() {
 
     const handleLongPressStart = (type, lot, id, data) => {
         if (!data) return;
+        setIsLongPressing(true);
         const timer = setTimeout(() => {
             setMoveMode({ type, lot, id, data });
         }, 500);
@@ -116,6 +119,10 @@ function ValetParkingApp() {
             clearTimeout(longPressTimer);
             setLongPressTimer(null);
         }
+        // Reset the flag after a short delay to allow click to check it
+        setTimeout(() => {
+            setIsLongPressing(false);
+        }, 100);
     };
 
     const handleStallClick = (type, lot, id) => {
@@ -378,11 +385,9 @@ function ValetParkingApp() {
                 }}
                 onClick={(e) => {
                     e.preventDefault();
-                    setTimeout(() => {
-                        if (!moveMode || moveMode.id !== id || moveMode.lot !== lot) {
-                            handleStallClick('stall', lot, id);
-                        }
-                    }, 50);
+                    if (!isLongPressing) {
+                        handleStallClick('stall', lot, id);
+                    }
                 }}
                 style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
                 className={`min-h-20 p-2 rounded text-xs font-medium border-2 transition-all w-full ${bgColor} ${borderColor} ${ringColor} cursor-pointer`}
@@ -464,11 +469,9 @@ function ValetParkingApp() {
                 }}
                 onClick={(e) => {
                     e.preventDefault();
-                    setTimeout(() => {
-                        if (!moveMode || moveMode.id !== id || moveMode.lot !== lot) {
-                            handleStallClick('overflow', lot, id);
-                        }
-                    }, 50);
+                    if (!isLongPressing) {
+                        handleStallClick('overflow', lot, id);
+                    }
                 }}
                 style={{ userSelect: 'none', WebkitUserSelect: 'none', touchAction: 'manipulation' }}
                 className={`min-h-16 p-2 rounded text-xs font-medium border-2 transition-all ${bgColor} ${borderColor} ${ringColor} cursor-pointer`}
