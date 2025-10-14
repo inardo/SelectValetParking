@@ -502,6 +502,9 @@ function ValetParkingApp() {
                     <div className="logo-container">
                         <h1 className="header-title">Valet Parking Management</h1>
                     </div>
+                    <div className="text-white text-xs text-center mt-2 opacity-75">
+                        v1.0.5 - Long Press Move
+                    </div>
                 </div>
                 
                 {moveMode && (
