@@ -374,7 +374,7 @@ const handleStallClick = (type, lot, id) => {
                             e.stopPropagation();
                             handleStartMove('stall', lot, id, data);
                         }}
-                        className="absolute bottom-1 right-1 bg-blue-500 text-white text-[9px] px-2 py-0.5 rounded hover:bg-blue-600"
+                        className="absolute bottom-1 right-1 bg-green-500 text-white text-[9px] px-2 py-0.5 rounded hover:bg-green-600"
                     >
                         Move
                     </button>
@@ -437,7 +437,7 @@ const handleStallClick = (type, lot, id) => {
                             e.stopPropagation();
                             handleStartMove('overflow', lot, id, data);
                         }}
-                        className="absolute bottom-1 right-1 bg-blue-500 text-white text-[9px] px-2 py-0.5 rounded hover:bg-blue-600"
+                        className="absolute bottom-1 right-1 bg-green-500 text-white text-[9px] px-2 py-0.5 rounded hover:bg-green-600"
                     >
                         Move
                     </button>
@@ -454,7 +454,7 @@ const handleStallClick = (type, lot, id) => {
                         <h1 className="header-title">Valet Parking Management</h1>
                     </div>
                     <div className="text-white text-xs text-center mt-2 opacity-75">
-                        v1.0.9 - move button
+                        v1.0.10 - move button green, add of10-x
                     </div>
                 </div>
                 
@@ -604,10 +604,9 @@ const handleStallClick = (type, lot, id) => {
                             <div></div>
                         </div>
                         <div className="grid grid-cols-6 gap-3">
-                            {['OF6', 'OF7', 'OF8', 'OF9'].map(of => (
+                            {['OF6', 'OF7', 'OF8', 'OF9', 'OF10'].map(of => (
                                 <OverflowSpot key={of} id={of} lot="X" />
                             ))}
-                            <div></div>
                             <div></div>
                         </div>
                         <div className="grid grid-cols-5 gap-3 mt-4">
