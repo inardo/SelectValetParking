@@ -28,6 +28,8 @@ function ValetParkingApp() {
     const [moveMode, setMoveMode] = useState(null);
     const [longPressTimer, setLongPressTimer] = useState(null);
 
+    const [debugInfo, setDebugInfo] = useState('');
+
     const [isLongPressing, setIsLongPressing] = useState(false);
 
     const handleSearch = () => {
@@ -106,43 +108,32 @@ function ValetParkingApp() {
     };
 
 const handleLongPressStart = (type, lot, id, data) => {
-        console.log('=== handleLongPressStart ===', type, lot, id);
+        setDebugInfo(`START: ${type} ${lot} ${id}`);
         if (!data || moveMode) return;
         const timer = setTimeout(() => {
-            console.log('Long press activated!');
+            setDebugInfo('LONG PRESS ACTIVATED!');
             setMoveMode({ type, lot, id, data });
-        }, 600);  // Changed from 500 to 600ms for better iPad detection
+        }, 600);
         setLongPressTimer(timer);
     };
 
- const handleLongPressEnd = (e, type, lot, id) => {
-        console.log('=== handleLongPressEnd ===');
-        console.log('Event type:', e?.type);
-        console.log('longPressTimer exists:', !!longPressTimer);
-        console.log('moveMode:', moveMode);
-        
-        // Check if timer still exists (quick tap) and it's a number (not yet fired)
+    const handleLongPressEnd = (e, type, lot, id) => {
         const wasQuickTap = longPressTimer && typeof longPressTimer === 'number';
+        setDebugInfo(`END: Quick=${wasQuickTap} Move=${!!moveMode} Type=${type}`);
         
         if (longPressTimer && typeof longPressTimer === 'number') {
-            console.log('Clearing timer - was a quick tap');
             clearTimeout(longPressTimer);
         }
         setLongPressTimer(null);
         
-        // Handle quick tap - open editor or complete move
         if (wasQuickTap && type && lot && id !== undefined) {
-            console.log('Quick tap detected');
-            
             if (moveMode) {
-                console.log('Completing move');
-                // Small delay to ensure state is ready
+                setDebugInfo('COMPLETING MOVE');
                 setTimeout(() => {
                     handleMove(type, lot, id);
                 }, 50);
             } else {
-                console.log('Opening editor');
-                // Small delay to ensure state is ready
+                setDebugInfo('OPENING EDITOR');
                 setTimeout(() => {
                     if (type === 'stall') {
                         setEditingStall({ stall: id, lot });
@@ -506,8 +497,13 @@ const handleLongPressStart = (type, lot, id, data) => {
                         <h1 className="header-title">Valet Parking Management</h1>
                     </div>
                     <div className="text-white text-xs text-center mt-2 opacity-75">
-                        v1.0.6 - Long Press Move - Ipad fix
+                        v1.0.65 - Touch Debug
                     </div>
+                </div>
+                
+                {/* DEBUG PANEL */}
+                <div className="bg-gray-800 text-white p-2 rounded mb-4 text-xs font-mono">
+                    Debug: {debugInfo || 'Waiting...'}
                 </div>
                 
                 {moveMode && (
