@@ -117,30 +117,37 @@ function ValetParkingApp() {
 
     const handleLongPressEnd = (e, type, lot, id) => {
         console.log('=== handleLongPressEnd ===');
+        console.log('longPressTimer exists:', !!longPressTimer);
+        console.log('moveMode:', moveMode);
         
-        // Check if it was a quick tap (timer still exists = didn't hold long enough)
-        const wasQuickTap = longPressTimer !== null;
+        // Only open editor if:
+        // 1. Timer still exists (wasn't a long press)
+        // 2. We're NOT already in move mode
+        // 3. We have the necessary parameters
+        const wasQuickTap = longPressTimer && typeof longPressTimer === 'number';
         
         if (longPressTimer) {
-            console.log('Clearing timer - was a quick tap');
+            console.log('Clearing timer');
             clearTimeout(longPressTimer);
             setLongPressTimer(null);
-            
-            // If it was a quick tap and we have type/lot/id, open the editor
-            if (wasQuickTap && type && lot && id !== undefined) {
-                console.log('Quick tap detected - opening editor');
-                setTimeout(() => {
-                    if (!moveMode) {
-                        if (type === 'stall') {
-                            setEditingStall({ stall: id, lot });
-                        } else {
-                            setEditingOverflow({ lot, ofId: id });
-                        }
-                    } else {
-                        handleMove(type, lot, id);
-                    }
-                }, 100);
-            }
+        }
+        
+        // If it was a quick tap, not in move mode, and we have params, open editor
+        if (wasQuickTap && !moveMode && type && lot && id !== undefined) {
+            console.log('Quick tap detected - opening editor');
+            setTimeout(() => {
+                if (type === 'stall') {
+                    setEditingStall({ stall: id, lot });
+                } else {
+                    setEditingOverflow({ lot, ofId: id });
+                }
+            }, 10);
+        } else if (moveMode && type && lot && id !== undefined) {
+            // If we're in move mode, complete the move
+            console.log('In move mode - completing move');
+            setTimeout(() => {
+                handleMove(type, lot, id);
+            }, 10);
         }
     };
 
