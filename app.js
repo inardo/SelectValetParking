@@ -4,6 +4,8 @@ function ValetParkingApp() {
     const [lotD, setLotD] = useState(() => window.migrateData(localStorage.getItem('lotD')));
     const [lotX, setLotX] = useState(() => window.migrateData(localStorage.getItem('lotX')));
     const [lotY, setLotY] = useState(() => window.migrateData(localStorage.getItem('lotY')));
+    const [lotB, setLotB] = useState(() => window.migrateData(localStorage.getItem('lotB')));
+    const [lotA, setLotA] = useState(() => window.migrateData(localStorage.getItem('lotA')));
     const [overflowX, setOverflowX] = useState(() => {
         const saved = localStorage.getItem('overflowX');
         return saved ? JSON.parse(saved) : {};
@@ -18,6 +20,8 @@ function ValetParkingApp() {
     useEffect(() => { localStorage.setItem('lotY', JSON.stringify(lotY)); }, [lotY]);
     useEffect(() => { localStorage.setItem('overflowX', JSON.stringify(overflowX)); }, [overflowX]);
     useEffect(() => { localStorage.setItem('overflowY', JSON.stringify(overflowY)); }, [overflowY]);
+    useEffect(() => { localStorage.setItem('lotB', JSON.stringify(lotB)); }, [lotB]);
+    useEffect(() => { localStorage.setItem('lotA', JSON.stringify(lotA)); }, [lotA]);
     
     const [activeTab, setActiveTab] = useState('X');
     const [searchTerm, setSearchTerm] = useState('');
@@ -88,6 +92,26 @@ function ValetParkingApp() {
                 return;
             }
         }
+        for (const [stall, ticketData] of Object.entries(lotB)) {
+            const ticket = window.getTicketValue(ticketData);
+            if (ticket === searchTicket) {
+                const blockingInfo = window.getAllBlockingInfo('B', stall, lotD, lotX, lotY, overflowX, overflowY, lotB, lotA);
+                const notes = window.getNotesValue(ticketData);
+                setSearchResult({ lot: 'B', stall, blockingInfo, notes });
+                setActiveTab('B');
+                return;
+            }
+        }
+        for (const [stall, ticketData] of Object.entries(lotA)) {
+            const ticket = window.getTicketValue(ticketData);
+            if (ticket === searchTicket) {
+                const blockingInfo = window.getAllBlockingInfo('A', stall, lotD, lotX, lotY, overflowX, overflowY, lotB, lotA);
+                const notes = window.getNotesValue(ticketData);
+                setSearchResult({ lot: 'A', stall, blockingInfo, notes });
+                setActiveTab('A');
+                return;
+            }
+        }
         setSearchResult({ notFound: true });
     };
 
@@ -100,6 +124,10 @@ function ValetParkingApp() {
             setOverflowY({});
         } else if (lot === 'D') {
             setLotD({});
+        } else if (lot === 'B') {
+            setLotB({});
+        } else if (lot === 'A') {
+            setLotA({});
         }
         setShowClearAllConfirm(null);
     };
@@ -138,7 +166,11 @@ const handleStallClick = (type, lot, id) => {
 
         let targetData = null;
         if (targetType === 'stall') {
-            targetData = targetLot === 'D' ? lotD[targetId] : targetLot === 'X' ? lotX[targetId] : lotY[targetId];
+            if (targetLot === 'D') targetData = lotD[targetId];
+            else if (targetLot === 'X') targetData = lotX[targetId];
+            else if (targetLot === 'Y') targetData = lotY[targetId];
+            else if (targetLot === 'B') targetData = lotB[targetId];
+            else if (targetLot === 'A') targetData = lotA[targetId];
         } else if (targetType === 'overflow') {
             const targetOverflow = targetLot === 'X' ? overflowX : overflowY;
             targetData = targetOverflow[targetId];
@@ -154,71 +186,48 @@ const handleStallClick = (type, lot, id) => {
         }
 
         if (sourceType === 'stall' && targetType === 'stall') {
-            if (sourceLot === 'D') {
-                const newLotD = { ...lotD };
-                if (targetData) {
-                    newLotD[sourceId] = targetData;
-                } else {
-                    delete newLotD[sourceId];
-                }
-                if (targetLot === 'D') {
-                    newLotD[targetId] = sourceData;
-                    setLotD(newLotD);
-                } else if (targetLot === 'X') {
-                    const newLotX = { ...lotX };
-                    newLotX[targetId] = sourceData;
-                    setLotD(newLotD);
-                    setLotX(newLotX);
-                } else {
-                    const newLotY = { ...lotY };
-                    newLotY[targetId] = sourceData;
-                    setLotD(newLotD);
-                    setLotY(newLotY);
-                }
-            } else if (sourceLot === 'X') {
-                const newLotX = { ...lotX };
-                if (targetData) {
-                    newLotX[sourceId] = targetData;
-                } else {
-                    delete newLotX[sourceId];
-                }
-                if (targetLot === 'X') {
-                    newLotX[targetId] = sourceData;
-                    setLotX(newLotX);
-                } else if (targetLot === 'D') {
-                    const newLotD = { ...lotD };
-                    newLotD[targetId] = sourceData;
-                    setLotX(newLotX);
-                    setLotD(newLotD);
-                } else {
-                    const newLotY = { ...lotY };
-                    newLotY[targetId] = sourceData;
-                    setLotX(newLotX);
-                    setLotY(newLotY);
-                }
+            // Moving from any lot to any lot
+            let newSourceLot = {};
+            let setSourceLot = null;
+            
+            // Get source lot data and setter
+            if (sourceLot === 'D') { newSourceLot = { ...lotD }; setSourceLot = setLotD; }
+            else if (sourceLot === 'X') { newSourceLot = { ...lotX }; setSourceLot = setLotX; }
+            else if (sourceLot === 'Y') { newSourceLot = { ...lotY }; setSourceLot = setLotY; }
+            else if (sourceLot === 'B') { newSourceLot = { ...lotB }; setSourceLot = setLotB; }
+            else if (sourceLot === 'A') { newSourceLot = { ...lotA }; setSourceLot = setLotA; }
+            
+            // Handle source: swap or remove
+            if (targetData) {
+                newSourceLot[sourceId] = targetData;
             } else {
-                const newLotY = { ...lotY };
-                if (targetData) {
-                    newLotY[sourceId] = targetData;
-                } else {
-                    delete newLotY[sourceId];
-                }
-                if (targetLot === 'Y') {
-                    newLotY[targetId] = sourceData;
-                    setLotY(newLotY);
-                } else if (targetLot === 'D') {
-                    const newLotD = { ...lotD };
-                    newLotD[targetId] = sourceData;
-                    setLotY(newLotY);
-                    setLotD(newLotD);
-                } else {
-                    const newLotX = { ...lotX };
-                    newLotX[targetId] = sourceData;
-                    setLotY(newLotY);
-                    setLotX(newLotX);
-                }
+                delete newSourceLot[sourceId];
             }
+            
+            // Get target lot data and setter
+            let newTargetLot = {};
+            let setTargetLot = null;
+            
+            if (targetLot === 'D') { newTargetLot = { ...lotD }; setTargetLot = setLotD; }
+            else if (targetLot === 'X') { newTargetLot = { ...lotX }; setTargetLot = setLotX; }
+            else if (targetLot === 'Y') { newTargetLot = { ...lotY }; setTargetLot = setLotY; }
+            else if (targetLot === 'B') { newTargetLot = { ...lotB }; setTargetLot = setLotB; }
+            else if (targetLot === 'A') { newTargetLot = { ...lotA }; setTargetLot = setLotA; }
+            
+            // Place source data in target
+            if (sourceLot === targetLot) {
+                // Same lot - just update once
+                newSourceLot[targetId] = sourceData;
+                setSourceLot(newSourceLot);
+            } else {
+                // Different lots - update both
+                newTargetLot[targetId] = sourceData;
+                setSourceLot(newSourceLot);
+                setTargetLot(newTargetLot);
+            }
+            
         } else if (sourceType === 'stall' && targetType === 'overflow') {
+            // Remove from source lot
             if (sourceLot === 'D') {
                 const newLotD = { ...lotD };
                 delete newLotD[sourceId];
@@ -227,12 +236,21 @@ const handleStallClick = (type, lot, id) => {
                 const newLotX = { ...lotX };
                 delete newLotX[sourceId];
                 setLotX(newLotX);
-            } else {
+            } else if (sourceLot === 'Y') {
                 const newLotY = { ...lotY };
                 delete newLotY[sourceId];
                 setLotY(newLotY);
+            } else if (sourceLot === 'B') {
+                const newLotB = { ...lotB };
+                delete newLotB[sourceId];
+                setLotB(newLotB);
+            } else if (sourceLot === 'A') {
+                const newLotA = { ...lotA };
+                delete newLotA[sourceId];
+                setLotA(newLotA);
             }
             
+            // Add to overflow
             if (targetLot === 'X') {
                 const newOverflowX = { ...overflowX };
                 newOverflowX[targetId] = {
@@ -252,7 +270,9 @@ const handleStallClick = (type, lot, id) => {
                 };
                 setOverflowY(newOverflowY);
             }
+            
         } else if (sourceType === 'overflow' && targetType === 'stall') {
+            // Remove from overflow
             if (sourceLot === 'X') {
                 const newOverflowX = { ...overflowX };
                 delete newOverflowX[sourceId];
@@ -263,6 +283,7 @@ const handleStallClick = (type, lot, id) => {
                 setOverflowY(newOverflowY);
             }
             
+            // Add to target lot
             const newStallData = {
                 ticket: sourceData.ticket,
                 notes: sourceData.notes || '',
@@ -277,11 +298,20 @@ const handleStallClick = (type, lot, id) => {
                 const newLotX = { ...lotX };
                 newLotX[targetId] = newStallData;
                 setLotX(newLotX);
-            } else {
+            } else if (targetLot === 'Y') {
                 const newLotY = { ...lotY };
                 newLotY[targetId] = newStallData;
                 setLotY(newLotY);
+            } else if (targetLot === 'B') {
+                const newLotB = { ...lotB };
+                newLotB[targetId] = newStallData;
+                setLotB(newLotB);
+            } else if (targetLot === 'A') {
+                const newLotA = { ...lotA };
+                newLotA[targetId] = newStallData;
+                setLotA(newLotA);
             }
+            
         } else if (sourceType === 'overflow' && targetType === 'overflow') {
             if (sourceLot === targetLot) {
                 if (sourceLot === 'X') {
@@ -454,7 +484,7 @@ const handleStallClick = (type, lot, id) => {
                         <h1 className="header-title">Valet Parking Management</h1>
                     </div>
                     <div className="text-white text-xs text-center mt-2 opacity-75">
-                        v1.0.10 - move button green, add of10-x
+                        v1.0.11 - added Lots A & B - by Irwin Nardo
                     </div>
                 </div>
                 
@@ -565,7 +595,7 @@ const handleStallClick = (type, lot, id) => {
                 </div>
 
                 <div className="flex gap-2 mb-4">
-                    {['X', 'Y', 'D'].map(tab => (
+                    {['D', 'Y', 'X', 'B', 'A'].map(tab => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -699,6 +729,43 @@ const handleStallClick = (type, lot, id) => {
                                     <Stall key={stall} id={stall} lot="D" data={lotD[stall]} />
                                 ))}
                             </div>
+                        </div>
+                    </div>
+                )}
+                {activeTab === 'B' && (
+                    <div className="bg-white rounded-lg shadow p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold">Lot B (12 Stalls)</h2>
+                            <button
+                                onClick={() => setShowClearAllConfirm('B')}
+                                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 font-semibold text-sm"
+                            >
+                                Clear All
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-12 gap-3">
+                            {window.LOT_B_STALLS.map(stall => (
+                                <Stall key={stall} id={stall} lot="B" data={lotB[stall]} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'A' && (
+                    <div className="bg-white rounded-lg shadow p-6">
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold">Lot A (10 Stalls)</h2>
+                            <button
+                                onClick={() => setShowClearAllConfirm('A')}
+                                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 font-semibold text-sm"
+                            >
+                                Clear All
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-10 gap-3">
+                            {window.LOT_A_STALLS.map(stall => (
+                                <Stall key={stall} id={stall} lot="A" data={lotA[stall]} />
+                            ))}
                         </div>
                     </div>
                 )}
